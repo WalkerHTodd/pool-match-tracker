@@ -86,56 +86,37 @@ document.addEventListener("DOMContentLoaded", function() {
   }
 
   
-  function showPlayerStats(player) {
-    let players = JSON.parse(localStorage.getItem("players")) || {};
-    let stats = players[player];
-  
-    if (!stats) return;
-  
-    let totalMatches = stats.wins + stats.losses + stats.ties;
-    let overallWinRatio = totalMatches > 0 ? (stats.wins / totalMatches).toFixed(2) : "0.00";
-  
-    // Determine best and worst opponents based on head-to-head win percentages
-    let bestOpponent = null;
-    let worstOpponent = null;
-    let bestRatio = -1;  // lower bound for best win ratio
-    let worstRatio = 2;  // upper bound for worst win ratio
-  
-    if (stats.opponents) {
-      for (let opp in stats.opponents) {
-        let oppStats = stats.opponents[opp];
-        let oppTotal = oppStats.wins + oppStats.losses + oppStats.ties;
-        if (oppTotal > 0) {
-          let ratio = oppStats.wins / oppTotal;
-          if (ratio > bestRatio) {
-            bestRatio = ratio;
-            bestOpponent = opp;
-          }
-          if (ratio < worstRatio) {
-            worstRatio = ratio;
-            worstOpponent = opp;
-          }
+  function showPlayerStats(playerName) {
+    fetch("https://api.jsonbin.io/v3/b/67bf6c75acd3cb34a8f178dd/latest", {
+        headers: { "X-Master-Key": "$2a$10$Ia4Urf.zWbu9aHkKVrCYyelvMlDUJmd3myQenmv4DVxv75f3Och1O" }
+    })
+    .then(response => response.json())
+    .then(data => {
+        let leaderboard = data.record.leaderboard;
+        let player = leaderboard.find(p => p.name === playerName);
+
+        if (!player) {
+            alert("Player not found.");
+            return;
         }
-      }
-    }
-  
-    // Format the ratios if a valid matchup exists; otherwise, use "N/A"
-    let bestRatioDisplay = bestOpponent ? bestRatio.toFixed(2) : "N/A";
-    let worstRatioDisplay = worstOpponent ? worstRatio.toFixed(2) : "N/A";
-  
-    document.getElementById("stats-player").innerText = `Stats for ${player}`;
-    document.getElementById("stats-details").innerHTML = `
-      <p>Wins: ${stats.wins}</p>
-      <p>Losses: ${stats.losses}</p>
-      <p>Ties: ${stats.ties}</p>
-      <p>Total Matches: ${totalMatches}</p>
-      <p>Overall Win/Loss Ratio: ${overallWinRatio}</p>
-      <p>Best Opponent: ${bestOpponent ? bestOpponent + " (Win Ratio: " + bestRatioDisplay + ")" : "N/A"}</p>
-      <p>Worst Opponent: ${worstOpponent ? worstOpponent + " (Win Ratio: " + worstRatioDisplay + ")" : "N/A"}</p>
-    `;
-  
-    document.querySelector(".player-stats").style.display = "block";
+
+        let totalMatches = player.wins + player.losses + player.ties;
+        let winRatio = totalMatches > 0 ? (player.wins / totalMatches).toFixed(2) : "0.00";
+
+        document.getElementById("stats-player").innerText = `Stats for ${player.name}`;
+        document.getElementById("stats-details").innerHTML = `
+            <p>Wins: ${player.wins}</p>
+            <p>Losses: ${player.losses}</p>
+            <p>Ties: ${player.ties}</p>
+            <p>Total Matches: ${totalMatches}</p>
+            <p>Win/Loss Ratio: ${winRatio}</p>
+        `;
+
+        document.querySelector(".player-stats").style.display = "block";
+    })
+    .catch(error => console.error("Error loading player stats:", error));
   }
+
   
   function closeStats() {
     document.querySelector(".player-stats").style.display = "none";
